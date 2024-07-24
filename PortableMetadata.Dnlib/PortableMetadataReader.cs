@@ -7,13 +7,22 @@ using dnlib.DotNet.Writer;
 
 namespace MetadataSerialization.Dnlib;
 
+/// <summary>
+/// The metadata reader that reads the metadata from the <see cref="ModuleDef"/> to the <see cref="PortableMetadata"/>.
+/// </summary>
 public sealed class PortableMetadataReader : ICustomAttributeWriterHelper {
 	readonly ModuleDef module;
 	readonly PortableMetadata metadata;
 	readonly PortableMetadataUpdater updater;
 
+	/// <summary>
+	/// Gets the <see cref="ModuleDef"/> associated with the <see cref="PortableMetadataReader"/>.
+	/// </summary>
 	public ModuleDef Module => module;
 
+	/// <summary>
+	/// Gets the <see cref="PortableMetadata"/> associated with the <see cref="PortableMetadataReader"/>.
+	/// </summary>
 	public PortableMetadata Metadata => metadata;
 
 	bool UseAssemblyFullName => (metadata.Options & PortableMetadataOptions.UseAssemblyFullName) != 0;
@@ -22,12 +31,23 @@ public sealed class PortableMetadataReader : ICustomAttributeWriterHelper {
 
 	bool IncludeCustomAttributes => (metadata.Options & PortableMetadataOptions.IncludeCustomAttributes) != 0;
 
+	/// <summary>
+	/// Constructor
+	/// </summary>
+	/// <param name="module"></param>
+	/// <param name="options"></param>
 	public PortableMetadataReader(ModuleDef module, PortableMetadataOptions options = PortableMetadata.DefaultOptions) {
 		this.module = module;
 		metadata = new PortableMetadata(options);
 		updater = new PortableMetadataUpdater(metadata);
 	}
 
+	/// <summary>
+	/// Add a type to <see cref="Metadata"/>.
+	/// </summary>
+	/// <param name="type"></param>
+	/// <param name="level"></param>
+	/// <returns></returns>
 	public PortableToken AddType(TypeDef type, PortableMetadataLevel level) {
 		if (type is null)
 			throw new ArgumentNullException(nameof(type));
@@ -80,6 +100,11 @@ public sealed class PortableMetadataReader : ICustomAttributeWriterHelper {
 		throw new InvalidOperationException();
 	}
 
+	/// <summary>
+	/// Add a type to <see cref="Metadata"/>.
+	/// </summary>
+	/// <param name="type"></param>
+	/// <returns></returns>
 	public PortableToken AddType(TypeRef type) {
 		if (type is null)
 			throw new ArgumentNullException(nameof(type));
@@ -97,6 +122,12 @@ public sealed class PortableMetadataReader : ICustomAttributeWriterHelper {
 		return updater.Update(typeRef, PortableMetadataLevel.Reference, out _);
 	}
 
+	/// <summary>
+	/// Add a type to <see cref="Metadata"/>.
+	/// </summary>
+	/// <param name="type"></param>
+	/// <returns></returns>
+	/// <exception cref="ArgumentNullException"></exception>
 	public PortableComplexType AddType(TypeSpec type) {
 		if (type is null)
 			throw new ArgumentNullException(nameof(type));
@@ -104,6 +135,12 @@ public sealed class PortableMetadataReader : ICustomAttributeWriterHelper {
 		return AddTypeSig(type.TypeSig);
 	}
 
+	/// <summary>
+	/// Add a field to <see cref="Metadata"/>.
+	/// </summary>
+	/// <param name="field"></param>
+	/// <param name="level"></param>
+	/// <returns></returns>
 	public PortableToken AddField(FieldDef field, PortableMetadataLevel level) {
 		if (field is null)
 			throw new ArgumentNullException(nameof(field));
@@ -135,6 +172,11 @@ public sealed class PortableMetadataReader : ICustomAttributeWriterHelper {
 		throw new InvalidOperationException();
 	}
 
+	/// <summary>
+	/// Add a field to <see cref="Metadata"/>.
+	/// </summary>
+	/// <param name="field"></param>
+	/// <returns></returns>
 	public PortableToken AddField(MemberRef field) {
 		if (field is null)
 			throw new ArgumentNullException(nameof(field));
@@ -149,6 +191,12 @@ public sealed class PortableMetadataReader : ICustomAttributeWriterHelper {
 		return updater.Update(fieldRef, PortableMetadataLevel.Reference, out _);
 	}
 
+	/// <summary>
+	/// Add a method to <see cref="Metadata"/>.
+	/// </summary>
+	/// <param name="method"></param>
+	/// <param name="level"></param>
+	/// <returns></returns>
 	public PortableToken AddMethod(MethodDef method, PortableMetadataLevel level) {
 		if (method is null)
 			throw new ArgumentNullException(nameof(method));
@@ -184,6 +232,11 @@ public sealed class PortableMetadataReader : ICustomAttributeWriterHelper {
 		throw new InvalidOperationException();
 	}
 
+	/// <summary>
+	/// Add a method to <see cref="Metadata"/>.
+	/// </summary>
+	/// <param name="method"></param>
+	/// <returns></returns>
 	public PortableToken AddMethod(MemberRef method) {
 		if (method is null)
 			throw new ArgumentNullException(nameof(method));
@@ -201,6 +254,11 @@ public sealed class PortableMetadataReader : ICustomAttributeWriterHelper {
 	}
 
 	#region Wrappers
+	/// <summary>
+	/// Add a type to <see cref="Metadata"/>.
+	/// </summary>
+	/// <param name="type"></param>
+	/// <returns></returns>
 	public PortableComplexType AddType(ITypeDefOrRef type) {
 		return AddType(type, true);
 	}
@@ -219,6 +277,11 @@ public sealed class PortableMetadataReader : ICustomAttributeWriterHelper {
 			throw new NotSupportedException();
 	}
 
+	/// <summary>
+	/// Add a field to <see cref="Metadata"/>.
+	/// </summary>
+	/// <param name="field"></param>
+	/// <returns></returns>
 	public PortableToken AddField(IField field) {
 		if (field is null)
 			throw new ArgumentNullException(nameof(field));
@@ -231,6 +294,11 @@ public sealed class PortableMetadataReader : ICustomAttributeWriterHelper {
 			throw new NotSupportedException();
 	}
 
+	/// <summary>
+	/// Add a method to <see cref="Metadata"/>.
+	/// </summary>
+	/// <param name="method"></param>
+	/// <returns></returns>
 	public PortableToken AddMethod(IMethodDefOrRef method) {
 		if (method is null)
 			throw new ArgumentNullException(nameof(method));
@@ -243,6 +311,12 @@ public sealed class PortableMetadataReader : ICustomAttributeWriterHelper {
 			throw new NotSupportedException();
 	}
 
+	/// <summary>
+	/// Add the types to <see cref="Metadata"/>.
+	/// </summary>
+	/// <param name="types"></param>
+	/// <param name="level"></param>
+	/// <returns></returns>
 	public List<PortableToken> AddTypes(IEnumerable<TypeDef> types, PortableMetadataLevel level) {
 		if (types is null)
 			throw new ArgumentNullException(nameof(types));
@@ -262,7 +336,13 @@ public sealed class PortableMetadataReader : ICustomAttributeWriterHelper {
 		return list;
 	}
 
-	public List<PortableToken> AddFields(IList<FieldDef> fields, PortableMetadataLevel level) {
+	/// <summary>
+	/// Add the fields to <see cref="Metadata"/>.
+	/// </summary>
+	/// <param name="fields"></param>
+	/// <param name="level"></param>
+	/// <returns></returns>
+	public List<PortableToken> AddFields(IEnumerable<FieldDef> fields, PortableMetadataLevel level) {
 		if (fields is null)
 			throw new ArgumentNullException(nameof(fields));
 
@@ -281,7 +361,13 @@ public sealed class PortableMetadataReader : ICustomAttributeWriterHelper {
 		return list;
 	}
 
-	public List<PortableToken> AddMethods(IList<MethodDef> methods, PortableMetadataLevel level) {
+	/// <summary>
+	/// Add the methods to <see cref="Metadata"/>.
+	/// </summary>
+	/// <param name="methods"></param>
+	/// <param name="level"></param>
+	/// <returns></returns>
+	public List<PortableToken> AddMethods(IEnumerable<MethodDef> methods, PortableMetadataLevel level) {
 		if (methods is null)
 			throw new ArgumentNullException(nameof(methods));
 

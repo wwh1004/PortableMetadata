@@ -3,11 +3,21 @@ using System.Collections.Generic;
 
 namespace MetadataSerialization;
 
+/// <summary>
+/// The equality comparer for <see cref="PortableType"/>, <see cref="PortableField"/>, <see cref="PortableMethod"/>, and <see cref="PortableComplexType"/>.
+/// </summary>
 public sealed class PortableMetadataEqualityComparer : IEqualityComparer<PortableType>, IEqualityComparer<PortableField>, IEqualityComparer<PortableMethod>, IEqualityComparer<PortableComplexType> {
 	readonly bool onlyReference;
 	readonly bool nullEqualsEmpty;
 
+	/// <summary>
+	/// Gets the default equality comparer that compares only the reference.
+	/// </summary>
 	public static readonly PortableMetadataEqualityComparer ReferenceComparer = new(true, true);
+
+	/// <summary>
+	/// Gets the default equality comparer that compares all properties.
+	/// </summary>
 	public static readonly PortableMetadataEqualityComparer FullComparer = new(false, false);
 
 	PortableMetadataEqualityComparer(bool onlyReference, bool nullEqualsEmpty) {
@@ -15,6 +25,7 @@ public sealed class PortableMetadataEqualityComparer : IEqualityComparer<Portabl
 		this.nullEqualsEmpty = nullEqualsEmpty;
 	}
 
+	/// <inheritdoc/>
 	public bool Equals(PortableType? x, PortableType? y) {
 		if (ReferenceEquals(x, y))
 			return true;
@@ -56,12 +67,14 @@ public sealed class PortableMetadataEqualityComparer : IEqualityComparer<Portabl
 		return true;
 	}
 
+	/// <inheritdoc/>
 	public int GetHashCode(PortableType obj) {
 		if (obj is null)
 			return 0;
 		return (((((obj.Name.GetHashCode() * -1521134295) + obj.Namespace.GetHashCode()) * -1521134295) + (obj.Assembly?.GetHashCode() ?? 0)) * -1521134295) + GetHashCode_NameList(obj.EnclosingNames);
 	}
 
+	/// <inheritdoc/>
 	public bool Equals(PortableField? x, PortableField? y) {
 		if (ReferenceEquals(x, y))
 			return true;
@@ -88,12 +101,14 @@ public sealed class PortableMetadataEqualityComparer : IEqualityComparer<Portabl
 		return true;
 	}
 
+	/// <inheritdoc/>
 	public int GetHashCode(PortableField obj) {
 		if (obj is null)
 			return 0;
 		return (((obj.Name.GetHashCode() * -1521134295) + GetHashCode(obj.Type)) * -1521134295) + GetHashCode(obj.Signature);
 	}
 
+	/// <inheritdoc/>
 	public bool Equals(PortableMethod? x, PortableMethod? y) {
 		if (ReferenceEquals(x, y))
 			return true;
@@ -126,16 +141,19 @@ public sealed class PortableMetadataEqualityComparer : IEqualityComparer<Portabl
 		return true;
 	}
 
+	/// <inheritdoc/>
 	public int GetHashCode(PortableMethod obj) {
 		if (obj is null)
 			return 0;
 		return (((obj.Name.GetHashCode() * -1521134295) + GetHashCode(obj.Type)) * -1521134295) + GetHashCode(obj.Signature);
 	}
 
+	/// <inheritdoc/>
 	public bool Equals(PortableComplexType x, PortableComplexType y) {
 		return x.Kind == y.Kind && x.Token == y.Token && x.Type == y.Type && Equals_ComplexTypeList(x.Arguments, y.Arguments);
 	}
 
+	/// <inheritdoc/>
 	public int GetHashCode(PortableComplexType obj) {
 		int hash = obj.Kind.GetHashCode();
 		hash = (hash * -1521134295) + obj.Token.GetHashCode();

@@ -7,24 +7,65 @@ using System.Text;
 
 namespace MetadataSerialization;
 
+/// <summary>
+/// The options to create the portable metadata.
+/// </summary>
 [Flags]
 public enum PortableMetadataOptions {
+	/// <summary>
+	/// None
+	/// </summary>
 	None = 0,
+
+	/// <summary>
+	/// Use type/member name as token instead of index. This option will make the output more readable but significantly increase the size.
+	/// </summary>
 	UseNamedToken = 1,
+
+	/// <summary>
+	/// Use assembly full name not the display name.
+	/// </summary>
 	UseAssemblyFullName = 2,
+
+	/// <summary>
+	/// Include method bodies.
+	/// </summary>
 	IncludeMethodBodies = 4,
+
+	/// <summary>
+	/// Include custom attributes.
+	/// </summary>
 	IncludeCustomAttributes = 8
 }
 
+/// <summary>
+/// Portable metadata
+/// </summary>
+/// <param name="options">The options of the portable metadata.</param>
 public sealed class PortableMetadata(PortableMetadataOptions options) {
+	/// <summary>
+	/// The default options of the portable metadata.
+	/// </summary>
 	public const PortableMetadataOptions DefaultOptions = PortableMetadataOptions.UseAssemblyFullName | PortableMetadataOptions.IncludeMethodBodies | PortableMetadataOptions.IncludeCustomAttributes;
 
+	/// <summary>
+	/// Gets the options of the portable metadata.
+	/// </summary>
 	public PortableMetadataOptions Options { get; } = options;
 
+	/// <summary>
+	/// Gets the dictionary of portable types.
+	/// </summary>
 	public IDictionary<PortableToken, PortableType> Types { get; } = CreateDictionary<PortableType>((options & PortableMetadataOptions.UseNamedToken) != 0);
 
+	/// <summary>
+	/// Gets the dictionary of portable fields.
+	/// </summary>
 	public IDictionary<PortableToken, PortableField> Fields { get; } = CreateDictionary<PortableField>((options & PortableMetadataOptions.UseNamedToken) != 0);
 
+	/// <summary>
+	/// Gets the dictionary of portable methods.
+	/// </summary>
 	public IDictionary<PortableToken, PortableMethod> Methods { get; } = CreateDictionary<PortableMethod>((options & PortableMetadataOptions.UseNamedToken) != 0);
 
 	static IDictionary<PortableToken, TValue> CreateDictionary<TValue>(bool useNamedToken) where TValue : class {
@@ -173,23 +214,56 @@ public sealed class PortableMetadata(PortableMetadataOptions options) {
 	}
 }
 
+/// <summary>
+/// Represents a facade for portable metadata.
+/// </summary>
+/// <param name="metadata"></param>
 public sealed class PortableMetadataFacade(PortableMetadata? metadata) {
+	/// <summary>
+	/// Represents a facade for accessing portable metadata.
+	/// </summary>
+	/// <typeparam name="T">The type of the portable entity.</typeparam>
+	/// <typeparam name="TDef">The type of the portable entity definition.</typeparam>
 	public struct EntityFacade<T, TDef> where T : class where TDef : T {
+		/// <summary>
+		/// Gets or sets the dictionary of portable entity references.
+		/// </summary>
 		public IDictionary<string, T> References { get; set; }
 
+		/// <summary>
+		/// Gets or sets the dictionary of portable entity definitions.
+		/// </summary>
 		public IDictionary<string, TDef> Definitions { get; set; }
 
+		/// <summary>
+		/// Gets or sets the list of orders for portable entities.
+		/// </summary>
 		public IList<int> Orders { get; set; }
 	}
 
+	/// <summary>
+	/// Gets or sets the options of the portable metadata.
+	/// </summary>
 	public PortableMetadataOptions Options { get; set; } = metadata?.Options ?? 0;
 
+	/// <summary>
+	/// Gets or sets the entity facade for portable types.
+	/// </summary>
 	public EntityFacade<PortableType, PortableTypeDef> Types { get; set; } = Copy<PortableType, PortableTypeDef>(metadata?.Types, metadata?.Options ?? 0);
 
+	/// <summary>
+	/// Gets or sets the entity facade for portable fields.
+	/// </summary>
 	public EntityFacade<PortableField, PortableFieldDef> Fields { get; set; } = Copy<PortableField, PortableFieldDef>(metadata?.Fields, metadata?.Options ?? 0);
 
+	/// <summary>
+	/// Gets or sets the entity facade for portable methods.
+	/// </summary>
 	public EntityFacade<PortableMethod, PortableMethodDef> Methods { get; set; } = Copy<PortableMethod, PortableMethodDef>(metadata?.Methods, metadata?.Options ?? 0);
 
+	/// <summary>
+	/// The constructor for deserialization.
+	/// </summary>
 	public PortableMetadataFacade() : this(null) { }
 
 	static EntityFacade<T, TDef> Copy<T, TDef>(IDictionary<PortableToken, T>? source, PortableMetadataOptions useNamedToken) where T : class where TDef : T {
@@ -224,6 +298,10 @@ public sealed class PortableMetadataFacade(PortableMetadata? metadata) {
 		return result;
 	}
 
+	/// <summary>
+	/// Converts the <see cref="PortableMetadataFacade"/> to <see cref="PortableMetadata"/>.
+	/// </summary>
+	/// <returns>The converted <see cref="PortableMetadata"/>.</returns>
 	public PortableMetadata ToMetadata() {
 		var metadata = new PortableMetadata(Options);
 		bool useNamedToken = (Options & PortableMetadataOptions.UseNamedToken) != 0;
@@ -271,12 +349,30 @@ public sealed class PortableMetadataFacade(PortableMetadata? metadata) {
 	}
 }
 
+/// <summary>
+/// Represents the serialization level of the portable entity.
+/// </summary>
 public enum PortableMetadataLevel {
+	/// <summary>
+	/// Represents the reference level of the portable entity.
+	/// </summary>
 	Reference,
+
+	/// <summary>
+	/// Represents the definition level of the portable entity.
+	/// </summary>
 	Definition,
+
+	/// <summary>
+	/// Represents the definition with children level of the portable entity.
+	/// </summary>
 	DefinitionWithChildren
 }
 
+/// <summary>
+/// A helper type to create or update the portable metadata.
+/// </summary>
+/// <param name="metadata">The portable metadata.</param>
 public sealed class PortableMetadataUpdater(PortableMetadata metadata) {
 	sealed class TokenWithLevel {
 		public PortableToken Token;
@@ -301,6 +397,13 @@ public sealed class PortableMetadataUpdater(PortableMetadata metadata) {
 		return map;
 	}
 
+	/// <summary>
+	/// Updates the portable type in the portable metadata.
+	/// </summary>
+	/// <param name="type">The portable type to update.</param>
+	/// <param name="level">The serialization level of the portable type.</param>
+	/// <param name="currentLevel">The current serialization level of the portable type.</param>
+	/// <returns>The updated portable type token.</returns>
 	public PortableToken Update(PortableType type, PortableMetadataLevel level, out PortableMetadataLevel currentLevel) {
 		if (!typeTokens.TryGetValue(type, out var tl)) {
 			tl = new TokenWithLevel {
@@ -320,6 +423,13 @@ public sealed class PortableMetadataUpdater(PortableMetadata metadata) {
 		return tl.Token;
 	}
 
+	/// <summary>
+	/// Updates the portable field in the portable metadata.
+	/// </summary>
+	/// <param name="field">The portable field to update.</param>
+	/// <param name="level">The serialization level of the portable field.</param>
+	/// <param name="currentLevel">The current serialization level of the portable field.</param>
+	/// <returns>The updated portable field token.</returns>
 	public PortableToken Update(PortableField field, PortableMetadataLevel level, out PortableMetadataLevel currentLevel) {
 		if (!fieldTokens.TryGetValue(field, out var tl)) {
 			tl = new TokenWithLevel {
@@ -339,6 +449,13 @@ public sealed class PortableMetadataUpdater(PortableMetadata metadata) {
 		return tl.Token;
 	}
 
+	/// <summary>
+	/// Updates the portable method in the portable metadata.
+	/// </summary>
+	/// <param name="method">The portable method to update.</param>
+	/// <param name="level">The serialization level of the portable method.</param>
+	/// <param name="currentLevel">The current serialization level of the portable method.</param>
+	/// <returns>The updated portable method token.</returns>
 	public PortableToken Update(PortableMethod method, PortableMetadataLevel level, out PortableMetadataLevel currentLevel) {
 		if (!methodTokens.TryGetValue(method, out var tl)) {
 			tl = new TokenWithLevel {

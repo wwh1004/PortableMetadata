@@ -7,19 +7,39 @@ using ElementType2 = MetadataSerialization.PortableComplexTypeFormatter.ElementT
 
 namespace MetadataSerialization;
 
-// Metadata token
+/// <summary>
+/// Represents a metadata token.
+/// </summary>
 public readonly struct PortableToken : IEquatable<PortableToken>, IComparable<PortableToken> {
+	/// <summary>
+	/// Invalid characters for a token name.
+	/// </summary>
 	public static readonly char[] InvalidNameChars = ['(', ')', ',', '@'];
 
+	/// <summary>
+	/// Token index.
+	/// </summary>
 	public int Index { get; init; }
 
+	/// <summary>
+	/// Token name.
+	/// </summary>
+	/// <remarks>Only valid when <see cref="PortableMetadataOptions.UseNamedToken"/> is enabled.</remarks>
 	public string? Name { get; init; }
-
+	/// <summary>
+	/// Initializes a new instance of the <see cref="PortableToken"/> class with the specified index.
+	/// </summary>
+	/// <param name="index">The index of the token.</param>
 	public PortableToken(int index) {
 		Index = index;
 		Name = null;
 	}
 
+	/// <summary>
+	/// Initializes a new instance of the <see cref="PortableToken"/> class with the specified name.
+	/// </summary>
+	/// <param name="name">The name of the token.</param>
+	/// <exception cref="ArgumentException">Thrown when the name is null or empty.</exception>
 	public PortableToken(string name) {
 		if (string.IsNullOrEmpty(name))
 			throw new ArgumentException($"'{nameof(name)}' cannot be null or empty.", nameof(name));
@@ -29,14 +49,29 @@ public readonly struct PortableToken : IEquatable<PortableToken>, IComparable<Po
 		Name = name;
 	}
 
+	/// <summary>
+	/// Determines whether the specified <see cref="PortableToken"/> is equal to the current <see cref="PortableToken"/>.
+	/// </summary>
+	/// <param name="other">The <see cref="PortableToken"/> to compare with the current <see cref="PortableToken"/>.</param>
+	/// <returns>true if the specified <see cref="PortableToken"/> is equal to the current <see cref="PortableToken"/>; otherwise, false.</returns>
 	public bool Equals(PortableToken other) {
 		return Index == other.Index && Name == other.Name;
 	}
 
+	/// <summary>
+	/// Determines whether the specified object is equal to the current <see cref="PortableToken"/>.
+	/// </summary>
+	/// <param name="obj">The object to compare with the current <see cref="PortableToken"/>.</param>
+	/// <returns>true if the specified object is equal to the current <see cref="PortableToken"/>; otherwise, false.</returns>
 	public override bool Equals(object? obj) {
 		return obj is PortableToken other && Equals(other);
 	}
 
+	/// <summary>
+	/// Compares the current <see cref="PortableToken"/> with another <see cref="PortableToken"/>.
+	/// </summary>
+	/// <param name="other">The <see cref="PortableToken"/> to compare with the current <see cref="PortableToken"/>.</param>
+	/// <returns>A value that indicates the relative order of the objects being compared.</returns>
 	public int CompareTo(PortableToken other) {
 		if (Name is not null) {
 			// Named tokens are always lesser than unnamed tokens
@@ -52,52 +87,128 @@ public readonly struct PortableToken : IEquatable<PortableToken>, IComparable<Po
 		}
 	}
 
+	/// <summary>
+	/// Returns the hash code for the current <see cref="PortableToken"/>.
+	/// </summary>
+	/// <returns>A 32-bit signed integer hash code.</returns>
 	public override int GetHashCode() {
 		return Name is not null ? Name.GetHashCode() : Index;
 	}
 
+	/// <summary>
+	/// Returns a string that represents the current <see cref="PortableToken"/>.
+	/// </summary>
+	/// <returns>A string that represents the current <see cref="PortableToken"/>.</returns>
 	public override string ToString() {
 		return Name is not null ? Name : Index.ToString();
 	}
 
 	#region Operators
+	/// <summary/>
 	public static implicit operator PortableToken(int index) { return new PortableToken(index); }
+	/// <summary/>
 	public static implicit operator PortableToken(string name) { return new PortableToken(name); }
+	/// <summary/>
 	public static explicit operator int(PortableToken token) { return token.Index; }
+	/// <summary/>
 	public static explicit operator string(PortableToken token) { return token.Name ?? throw new InvalidCastException("Token is not named."); }
+	/// <summary/>
 	public static bool operator ==(PortableToken x, PortableToken y) { return x.Equals(y); }
+	/// <summary/>
 	public static bool operator !=(PortableToken x, PortableToken y) { return !x.Equals(y); }
+	/// <summary/>
 	public static bool operator <(PortableToken x, PortableToken y) { return x.CompareTo(y) < 0; }
+	/// <summary/>
 	public static bool operator >(PortableToken x, PortableToken y) { return x.CompareTo(y) > 0; }
+	/// <summary/>
 	public static bool operator <=(PortableToken x, PortableToken y) { return x.CompareTo(y) <= 0; }
+	/// <summary/>
 	public static bool operator >=(PortableToken x, PortableToken y) { return x.CompareTo(y) >= 0; }
 	#endregion
 }
 
+/// <summary>
+/// Represents the kind of <see cref="PortableComplexType"/>.
+/// </summary>
 public enum PortableComplexTypeKind : byte {
+	/// <summary>
+	/// A <see cref="PortableToken"/>.
+	/// </summary>
 	Token,
+
+	/// <summary>
+	/// A type signature.
+	/// </summary>
 	TypeSig,
+
+	/// <summary>
+	/// A calling convention signature.
+	/// </summary>
 	CallingConventionSig,
+
+	/// <summary>
+	/// An integer value.
+	/// </summary>
 	Int32,
+
+	/// <summary>
+	/// A method specification. (An instantiated generic method)
+	/// </summary>
 	MethodSpec,
+
+	/// <summary>
+	/// Inline type/token operand wrapper.
+	/// </summary>
 	InlineType,
+
+	/// <summary>
+	/// Inline field/token operand wrapper.
+	/// </summary>
 	InlineField,
+
+	/// <summary>
+	/// Inline method/token operand wrapper.
+	/// </summary>
 	InlineMethod
 }
 
-// TypeDef/TypeRef/TypeSpec/TypeDefOrRef
-// FieldDef/MemberRef
-// MethodDef/MemberRef/MethodSpec/MethodDefOrRef
-// TypeSig/CallingConventionSig
+/// <summary>
+/// Represents a portable complex type.
+/// </summary>
+/// <remarks>
+/// TypeDef/TypeRef/TypeSpec/TypeDefOrRef
+/// FieldDef/MemberRef
+/// MethodDef/MemberRef/MethodSpec/MethodDefOrRef
+/// TypeSig/CallingConventionSig
+/// </remarks>
 public struct PortableComplexType {
+	/// <summary>
+	/// Gets or sets the kind of <see cref="PortableComplexType"/>.
+	/// </summary>
 	public PortableComplexTypeKind Kind { get; set; }
 
+	/// <summary>
+	/// Gets or sets the token.
+	/// </summary>
+	/// <remarks>See <seealso cref="PortableComplexTypeKind.Token"/></remarks>
 	public PortableToken Token { get; set; }
 
+	/// <summary>
+	/// Gets or sets the element type or calling convention.
+	/// </summary>
+	/// <remarks>See <seealso cref="PortableComplexTypeKind.TypeSig"/> and <seealso cref="PortableComplexTypeKind.CallingConventionSig"/></remarks>
 	public byte Type { get; set; }
 
+	/// <summary>
+	/// Gets or sets the arguments.
+	/// </summary>
 	public IList<PortableComplexType>? Arguments { get; set; }
 
+	/// <summary>
+	/// Gets the integer value stored in the <see cref="PortableComplexType"/>.
+	/// </summary>
+	/// <returns></returns>
+	/// <remarks>See <seealso cref="PortableComplexTypeKind.Token"/></remarks>
 	public readonly int GetInt32() {
 		return Kind == PortableComplexTypeKind.Int32 ? Token.Index : throw new InvalidOperationException();
 	}
@@ -109,32 +220,71 @@ public struct PortableComplexType {
 		Arguments = arguments;
 	}
 
+	/// <summary>
+	/// Creates a complex type with the specified token.
+	/// </summary>
+	/// <param name="token">The token of the complex type.</param>
+	/// <returns>A complex type with the specified token.</returns>
 	public static PortableComplexType CreateToken(PortableToken token) {
 		return new PortableComplexType(PortableComplexTypeKind.Token, token, 0, null);
 	}
 
+	/// <summary>
+	/// Creates a complex type with the specified element type and arguments.
+	/// </summary>
+	/// <param name="elementType">The element type of the complex type.</param>
+	/// <param name="arguments">The arguments of the complex type.</param>
+	/// <returns>A complex type with the specified element type and arguments.</returns>
 	public static PortableComplexType CreateTypeSig(byte elementType, IList<PortableComplexType>? arguments) {
 		return new PortableComplexType(PortableComplexTypeKind.TypeSig, default, elementType, arguments);
 	}
 
+	/// <summary>
+	/// Creates a complex type with the specified calling convention and arguments.
+	/// </summary>
+	/// <param name="callingConvention">The calling convention of the complex type.</param>
+	/// <param name="arguments">The arguments of the complex type.</param>
+	/// <returns>A complex type with the specified calling convention and arguments.</returns>
 	public static PortableComplexType CreateCallingConventionSig(byte callingConvention, IList<PortableComplexType>? arguments) {
 		return new PortableComplexType(PortableComplexTypeKind.CallingConventionSig, default, callingConvention, arguments);
 	}
 
+	/// <summary>
+	/// Creates a complex type with the specified integer value.
+	/// </summary>
+	/// <param name="value">The integer value of the complex type.</param>
+	/// <returns>A complex type with the specified integer value.</returns>
 	public static PortableComplexType CreateInt32(int value) {
 		return new PortableComplexType(PortableComplexTypeKind.Int32, value, 0, null);
 	}
 
+	/// <summary>
+	/// Creates a complex type with the specified method and instantiation.
+	/// </summary>
+	/// <param name="method">The method of the complex type.</param>
+	/// <param name="instantiation">The instantiation of the complex type.</param>
+	/// <returns>A complex type with the specified method and instantiation.</returns>
 	public static PortableComplexType CreateMethodSpec(PortableComplexType method, PortableComplexType instantiation) {
 		return new PortableComplexType(PortableComplexTypeKind.MethodSpec, default, 0, [method, instantiation]);
 	}
 
+	/// <summary>
+	/// Creates a complex type with the specified kind and type.
+	/// </summary>
+	/// <param name="kind">The kind of the complex type.</param>
+	/// <param name="type">The type of the complex type.</param>
+	/// <returns>A complex type with the specified kind and type.</returns>
 	public static PortableComplexType CreateInlineTokenOperand(PortableComplexTypeKind kind, PortableComplexType type) {
 		if (kind < PortableComplexTypeKind.InlineType || kind > PortableComplexTypeKind.InlineMethod)
 			throw new ArgumentOutOfRangeException(nameof(kind));
 		return new PortableComplexType(kind, default, 0, [type]);
 	}
 
+	/// <summary>
+	/// Parses the specified string and returns a complex type.
+	/// </summary>
+	/// <param name="s">The string to parse.</param>
+	/// <returns>A complex type parsed from the specified string.</returns>
 	public static PortableComplexType Parse(string s) {
 		if (string.IsNullOrEmpty(s))
 			throw new ArgumentException($"'{nameof(s)}' cannot be null or empty.", nameof(s));
@@ -142,17 +292,37 @@ public struct PortableComplexType {
 		return PortableComplexTypeFormatter.Parse(s);
 	}
 
+	/// <summary>
+	/// Returns a string representation of the complex type.
+	/// </summary>
+	/// <returns>A string representation of the complex type.</returns>
 	public override readonly string ToString() {
 		return PortableComplexTypeFormatter.ToString(this);
 	}
 }
 
+/// <summary>
+/// Represents a portable constant.
+/// </summary>
+/// <param name="type"></param>
+/// <param name="value"></param>
 public struct PortableConstant(int type, object? value) {
+	/// <summary>
+	/// Gets or sets the type of the constant.
+	/// </summary>
 	public int Type { get; set; } = type;
 
-	// bool/char/sbyte/byte/short/ushort/int/uint/long/ulong/float/double/string
+	/// <summary>
+	/// Gets or sets the value of the constant.
+	/// </summary>
+	/// <remarks>
+	/// The value can be of type <see langword="bool"/>, <see langword="char"/>, <see langword="sbyte"/>, <see langword="byte"/>,
+	/// <see langword="short"/>, <see langword="ushort"/>, <see langword="int"/>, <see langword="uint"/>, <see langword="long"/>,
+	/// <see langword="ulong"/>, <see langword="float"/>, <see langword="double"/>, or <see langword="string"/>.
+	/// </remarks>
 	public object? Value { get; set; } = value;
 
+	/// <summary/>
 	[Obsolete("Reserved for deserialization.")]
 	public long? PrimitiveValue {
 		readonly get => PrimitivesHelper.ToSlot(Value);
@@ -162,6 +332,7 @@ public struct PortableConstant(int type, object? value) {
 		}
 	}
 
+	/// <summary/>
 	[Obsolete("Reserved for deserialization.")]
 	public string? StringValue {
 		readonly get => Value as string;
@@ -171,30 +342,66 @@ public struct PortableConstant(int type, object? value) {
 		}
 	}
 
+	/// <summary>
+	/// Returns the string of the constant value.
+	/// </summary>
+	/// <returns></returns>
 	public override readonly string? ToString() {
 		return Value?.ToString();
 	}
 }
 
+/// <summary>
+/// Represents a generic parameter.
+/// </summary>
+/// <param name="name">The name of the generic parameter.</param>
+/// <param name="attributes">The attributes of the generic parameter.</param>
+/// <param name="number">The number of the generic parameter.</param>
+/// <param name="constraints">The constraints of the generic parameter.</param>
 public struct PortableGenericParameter(string name, int attributes, int number, IList<PortableComplexType>? constraints) {
+	/// <summary>
+	/// Gets or sets the name of the generic parameter.
+	/// </summary>
 	public string Name { get; set; } = name;
 
+	/// <summary>
+	/// Gets or sets the attributes of the generic parameter.
+	/// </summary>
 	public int Attributes { get; set; } = attributes;
 
+	/// <summary>
+	/// Gets or sets the number of the generic parameter.
+	/// </summary>
 	public int Number { get; set; } = number;
 
-	// TypeDefOrRef
+	/// <summary>
+	/// Gets or sets the constraints of the generic parameter.
+	/// </summary>
+	/// <remarks>TypeDefOrRef</remarks>
 	public IList<PortableComplexType>? Constraints { get; set; } = constraints;
 
+	/// <summary>
+	/// Returns the string representation of the generic parameter.
+	/// </summary>
+	/// <returns>The name of the generic parameter.</returns>
 	public override readonly string ToString() {
 		return Name;
 	}
 }
 
+/// <summary>
+/// Represents a custom attribute.
+/// </summary>
 public struct PortableCustomAttribute(PortableToken constructor, byte[] rawData) {
-	// MethodDefOrRef
+	/// <summary>
+	/// Gets or sets the constructor of the custom attribute.
+	/// </summary>
+	/// <remarks>MethodDefOrRef</remarks>
 	public PortableToken Constructor { get; set; } = constructor;
 
+	/// <summary>
+	/// Gets or sets the raw data of the custom attribute.
+	/// </summary>
 	public byte[] RawData { get; set; } = rawData ?? throw new ArgumentNullException(nameof(rawData));
 }
 
@@ -631,7 +838,15 @@ static class PortableComplexTypeFormatter {
 	}
 }
 
+/// <summary>
+/// A helper to convert primitive values.
+/// </summary>
 public static class PrimitivesHelper {
+	/// <summary>
+	/// Converts the specified value to a slot representation.
+	/// </summary>
+	/// <param name="value">The value to convert.</param>
+	/// <returns>The slot representation of the value.</returns>
 	public static long? ToSlot(object? value) {
 		switch (value) {
 		case null:
@@ -666,6 +881,12 @@ public static class PrimitivesHelper {
 		}
 	}
 
+	/// <summary>
+	/// Converts the specified slot representation to a value of the specified element type.
+	/// </summary>
+	/// <param name="value">The slot representation to convert.</param>
+	/// <param name="elementType">The element type of the value.</param>
+	/// <returns>The value of the specified element type.</returns>
 	public static object? FromSlot(long? value, int elementType) {
 		if (value is not long slot)
 			return null;

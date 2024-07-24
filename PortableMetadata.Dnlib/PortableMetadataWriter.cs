@@ -7,6 +7,11 @@ using dnlib.DotNet.Emit;
 
 namespace MetadataSerialization.Dnlib;
 
+/// <summary>
+/// The metadata writer that writes the metadata from the <see cref="PortableMetadata"/> to the <see cref="ModuleDef"/>.
+/// </summary>
+/// <param name="module"></param>
+/// <param name="metadata"></param>
 public sealed class PortableMetadataWriter(ModuleDef module, PortableMetadata metadata) {
 	sealed class EntityWithLevel<T>(T value) {
 		public T Value = value;
@@ -18,14 +23,32 @@ public sealed class PortableMetadataWriter(ModuleDef module, PortableMetadata me
 	readonly Dictionary<PortableMethod, EntityWithLevel<MethodDef>> methods = new(PortableMetadataEqualityComparer.ReferenceComparer);
 	readonly Dictionary<string, AssemblyRef> assemblies = [];
 
+	/// <summary>
+	/// Gets the <see cref="ModuleDef"/> associated with the <see cref="PortableMetadataWriter"/>.
+	/// </summary>
 	public ModuleDef Module => module;
 
+	/// <summary>
+	/// Gets the <see cref="PortableMetadata"/> associated with the <see cref="PortableMetadataWriter"/>.
+	/// </summary>
 	public PortableMetadata Metadata => metadata;
 
+	/// <summary>
+	/// Gets or sets the delegate used for resolving assemblies.
+	/// </summary>
 	public Func<string, AssemblyRef?>? AssemblyResolving { get; set; }
 
+	/// <summary>
+	/// Gets or sets the delegate used for resolving types.
+	/// </summary>
 	public Func<AssemblyRef?, PortableType, ITypeDefOrRef?>? TypeResolving { get; set; }
 
+	/// <summary>
+	/// Add a type to <see cref="Module"/>.
+	/// </summary>
+	/// <param name="type"></param>
+	/// <param name="level"></param>
+	/// <returns></returns>
 	public TypeDef AddType(PortableType type, PortableMetadataLevel level) {
 		if (type is null)
 			throw new ArgumentNullException(nameof(type));
@@ -87,6 +110,12 @@ public sealed class PortableMetadataWriter(ModuleDef module, PortableMetadata me
 		throw new InvalidOperationException();
 	}
 
+	/// <summary>
+	/// Add a field to <see cref="Module"/>.
+	/// </summary>
+	/// <param name="field"></param>
+	/// <param name="level"></param>
+	/// <returns></returns>
 	public FieldDef AddField(PortableField field, PortableMetadataLevel level) {
 		if (field is null)
 			throw new ArgumentNullException(nameof(field));
@@ -125,6 +154,12 @@ public sealed class PortableMetadataWriter(ModuleDef module, PortableMetadata me
 		throw new InvalidOperationException();
 	}
 
+	/// <summary>
+	/// Add a method to <see cref="Module"/>.
+	/// </summary>
+	/// <param name="method"></param>
+	/// <param name="level"></param>
+	/// <returns></returns>
 	public MethodDef AddMethod(PortableMethod method, PortableMetadataLevel level) {
 		if (method is null)
 			throw new ArgumentNullException(nameof(method));

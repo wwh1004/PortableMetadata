@@ -3,5 +3,6 @@
 		<TargetFrameworks>net20;net40;netstandard2.0;net6.0;net8.0</TargetFrameworks>
 		<LangVersion>12.0</LangVersion>
 		<Nullable>enable</Nullable>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 	</PropertyGroup>
 </Project>
