@@ -12,8 +12,8 @@
 ## Scenarios
 
 1. Dump part of .NET metadata to view.
-1. Transfer processed. NET metadata between processes.
-1. Exchange data directly between different. NET metadata libraries.
+1. Transfer processed .NET metadata between processes.
+1. Exchange data directly between different .NET metadata libraries.
 1. Create a plaintext patch and apply it to an existing assembly.
 1. And more...
 
