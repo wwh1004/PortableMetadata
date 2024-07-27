@@ -105,28 +105,6 @@ public sealed class PortableMetadataReader : ICustomAttributeWriterHelper {
 	/// </summary>
 	/// <param name="type"></param>
 	/// <returns></returns>
-	public PortableToken AddType(TypeRef type) {
-		if (type is null)
-			throw new ArgumentNullException(nameof(type));
-		if (type.ResolutionScope is ModuleRef)
-			throw new NotSupportedException("Doesn't support the reference to the types of another module.");
-
-		var assembly = UseAssemblyFullName ? type.DefinitionAssembly.FullName : (string)type.DefinitionAssembly.Name;
-		var enclosingNames = type.DeclaringType is not null ? new List<string>() : null;
-		var enclosingType = type;
-		while (enclosingType.DeclaringType is not null) {
-			enclosingType = enclosingType.DeclaringType;
-			enclosingNames!.Add(enclosingType.Name);
-		}
-		var typeRef = new PortableType(type.Name, enclosingType.Namespace, assembly, enclosingNames);
-		return updater.Update(typeRef, PortableMetadataLevel.Reference, out _);
-	}
-
-	/// <summary>
-	/// Add a type to <see cref="Metadata"/>.
-	/// </summary>
-	/// <param name="type"></param>
-	/// <returns></returns>
 	/// <exception cref="ArgumentNullException"></exception>
 	public PortableComplexType AddType(TypeSpec type) {
 		if (type is null)
@@ -173,25 +151,6 @@ public sealed class PortableMetadataReader : ICustomAttributeWriterHelper {
 	}
 
 	/// <summary>
-	/// Add a field to <see cref="Metadata"/>.
-	/// </summary>
-	/// <param name="field"></param>
-	/// <returns></returns>
-	public PortableToken AddField(MemberRef field) {
-		if (field is null)
-			throw new ArgumentNullException(nameof(field));
-		if (!field.IsFieldRef)
-			throw new ArgumentException("MemberRef is not a field reference", nameof(field));
-		if (field.Class is ModuleRef)
-			throw new NotSupportedException("Doesn't support the reference to the members of another module's <Module>.");
-
-		var type = AddType(field.DeclaringType);
-		var signature = AddCallingConventionSig(field.Signature);
-		var fieldRef = new PortableField(field.Name, type, signature);
-		return updater.Update(fieldRef, PortableMetadataLevel.Reference, out _);
-	}
-
-	/// <summary>
 	/// Add a method to <see cref="Metadata"/>.
 	/// </summary>
 	/// <param name="method"></param>
@@ -232,35 +191,22 @@ public sealed class PortableMetadataReader : ICustomAttributeWriterHelper {
 		throw new InvalidOperationException();
 	}
 
-	/// <summary>
-	/// Add a method to <see cref="Metadata"/>.
-	/// </summary>
-	/// <param name="method"></param>
-	/// <returns></returns>
-	public PortableToken AddMethod(MemberRef method) {
-		if (method is null)
-			throw new ArgumentNullException(nameof(method));
-		if (!method.IsMethodRef)
-			throw new ArgumentException("MemberRef is not a method reference", nameof(method));
-		if (method.Class is MethodDef)
-			throw new NotSupportedException("Doesn't support the varargs method reference.");
-		if (method.Class is ModuleRef)
-			throw new NotSupportedException("Doesn't support the reference to the members of another module's <Module>.");
-
-		var type = AddType(method.DeclaringType);
-		var signature = AddCallingConventionSig(method.Signature);
-		var methodRef = new PortableMethod(method.Name, type, signature);
-		return updater.Update(methodRef, PortableMetadataLevel.Reference, out _);
-	}
-
 	#region Wrappers
-	/// <summary>
-	/// Add a type to <see cref="Metadata"/>.
-	/// </summary>
-	/// <param name="type"></param>
-	/// <returns></returns>
-	public PortableComplexType AddType(ITypeDefOrRef type) {
-		return AddType(type, true);
+	PortableToken AddType(TypeRef type) {
+		if (type is null)
+			throw new ArgumentNullException(nameof(type));
+		if (type.ResolutionScope is ModuleRef)
+			throw new NotSupportedException("Doesn't support the reference to the types of another module.");
+
+		var assembly = UseAssemblyFullName ? type.DefinitionAssembly.FullName : (string)type.DefinitionAssembly.Name;
+		var enclosingNames = type.DeclaringType is not null ? new List<string>() : null;
+		var enclosingType = type;
+		while (enclosingType.DeclaringType is not null) {
+			enclosingType = enclosingType.DeclaringType;
+			enclosingNames!.Add(enclosingType.Name);
+		}
+		var typeRef = new PortableType(type.Name, enclosingType.Namespace, assembly, enclosingNames);
+		return updater.Update(typeRef, PortableMetadataLevel.Reference, out _);
 	}
 
 	PortableComplexType AddType(ITypeDefOrRef type, bool allowTypeSpec = true) {
@@ -277,12 +223,21 @@ public sealed class PortableMetadataReader : ICustomAttributeWriterHelper {
 			throw new NotSupportedException();
 	}
 
-	/// <summary>
-	/// Add a field to <see cref="Metadata"/>.
-	/// </summary>
-	/// <param name="field"></param>
-	/// <returns></returns>
-	public PortableToken AddField(IField field) {
+	PortableToken AddField(MemberRef field) {
+		if (field is null)
+			throw new ArgumentNullException(nameof(field));
+		if (!field.IsFieldRef)
+			throw new ArgumentException("MemberRef is not a field reference", nameof(field));
+		if (field.Class is ModuleRef)
+			throw new NotSupportedException("Doesn't support the reference to the members of another module's <Module>.");
+
+		var type = AddType(field.DeclaringType);
+		var signature = AddCallingConventionSig(field.Signature);
+		var fieldRef = new PortableField(field.Name, type, signature);
+		return updater.Update(fieldRef, PortableMetadataLevel.Reference, out _);
+	}
+
+	PortableToken AddField(IField field) {
 		if (field is null)
 			throw new ArgumentNullException(nameof(field));
 
@@ -294,12 +249,23 @@ public sealed class PortableMetadataReader : ICustomAttributeWriterHelper {
 			throw new NotSupportedException();
 	}
 
-	/// <summary>
-	/// Add a method to <see cref="Metadata"/>.
-	/// </summary>
-	/// <param name="method"></param>
-	/// <returns></returns>
-	public PortableToken AddMethod(IMethodDefOrRef method) {
+	PortableToken AddMethod(MemberRef method) {
+		if (method is null)
+			throw new ArgumentNullException(nameof(method));
+		if (!method.IsMethodRef)
+			throw new ArgumentException("MemberRef is not a method reference", nameof(method));
+		if (method.Class is MethodDef)
+			throw new NotSupportedException("Doesn't support the varargs method reference.");
+		if (method.Class is ModuleRef)
+			throw new NotSupportedException("Doesn't support the reference to the members of another module's <Module>.");
+
+		var type = AddType(method.DeclaringType);
+		var signature = AddCallingConventionSig(method.Signature);
+		var methodRef = new PortableMethod(method.Name, type, signature);
+		return updater.Update(methodRef, PortableMetadataLevel.Reference, out _);
+	}
+
+	PortableToken AddMethod(IMethodDefOrRef method) {
 		if (method is null)
 			throw new ArgumentNullException(nameof(method));
 
@@ -321,14 +287,8 @@ public sealed class PortableMetadataReader : ICustomAttributeWriterHelper {
 		if (types is null)
 			throw new ArgumentNullException(nameof(types));
 
-		List<PortableToken> list;
-		if (types is IList<TypeDef> l) {
-			if (l.Count == 0)
-				return [];
-			list = new List<PortableToken>(l.Count);
-		}
-		else
-			list = [];
+		if (Enumerable2.NewList(types, out List<PortableToken> list))
+			return list;
 		foreach (var t in types) {
 			var type = AddType(t, level);
 			list.Add(type);
@@ -346,14 +306,8 @@ public sealed class PortableMetadataReader : ICustomAttributeWriterHelper {
 		if (fields is null)
 			throw new ArgumentNullException(nameof(fields));
 
-		List<PortableToken> list;
-		if (fields is IList<FieldDef> l) {
-			if (l.Count == 0)
-				return [];
-			list = new List<PortableToken>(l.Count);
-		}
-		else
-			list = [];
+		if (Enumerable2.NewList(fields, out List<PortableToken> list))
+			return list;
 		foreach (var f in fields) {
 			var field = AddField(f, level);
 			list.Add(field);
@@ -371,14 +325,8 @@ public sealed class PortableMetadataReader : ICustomAttributeWriterHelper {
 		if (methods is null)
 			throw new ArgumentNullException(nameof(methods));
 
-		List<PortableToken> list;
-		if (methods is IList<MethodDef> l) {
-			if (l.Count == 0)
-				return [];
-			list = new List<PortableToken>(l.Count);
-		}
-		else
-			list = [];
+		if (Enumerable2.NewList(methods, out List<PortableToken> list))
+			return list;
 		foreach (var m in methods) {
 			var method = AddMethod(m, level);
 			list.Add(method);
@@ -797,4 +745,19 @@ public sealed class PortableMetadataReader : ICustomAttributeWriterHelper {
 		return PortableComplexType.CreateCallingConventionSig(callingConvention, arguments);
 	}
 	#endregion
+}
+
+static class Enumerable2 {
+	public static bool NewList<T1, T2>(IEnumerable<T1> a, out List<T2> b) {
+		if (a is IList<T1> l) {
+			if (l.Count == 0) {
+				b = [];
+				return true;
+			}
+			b = new List<T2>(l.Count);
+		}
+		else
+			b = [];
+		return false;
+	}
 }

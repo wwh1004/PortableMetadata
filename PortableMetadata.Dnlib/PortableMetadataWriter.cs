@@ -76,7 +76,7 @@ public sealed class PortableMetadataWriter(ModuleDef module, PortableMetadata me
 		var gpContext = new GenericParamContext(typeDef);
 		if (result.Level < PortableMetadataLevel.Definition) {
 			typeDef.Attributes = (TypeAttributes)type2.Attributes;
-			typeDef.BaseType = type2.BaseType is PortableComplexType bt ? ResolveType(bt, gpContext) : null;
+			typeDef.BaseType = type2.BaseType is PortableComplexType bt ? AddType(bt, gpContext) : null;
 			AddCustomAttributes(type2.CustomAttributes, typeDef.CustomAttributes, gpContext);
 			AddGenericParameters(type2.GenericParameters, typeDef.GenericParameters, gpContext);
 			AddInterfaces(type2.Interfaces, typeDef.Interfaces, gpContext);
@@ -206,6 +206,82 @@ public sealed class PortableMetadataWriter(ModuleDef module, PortableMetadata me
 		throw new InvalidOperationException();
 	}
 
+	#region Wrappers
+	ITypeDefOrRef AddType(PortableComplexType type, GenericParamContext gpContext, bool allowTypeSpec = true) {
+		if (type.Kind == PortableComplexTypeKind.Token)
+			return ResolveType(metadata.Types[type.Token]);
+		else if (allowTypeSpec)
+			return new TypeSpecUser(AddTypeSig(type, gpContext));
+		else
+			throw new InvalidOperationException();
+	}
+
+	IField AddField(PortableToken field, GenericParamContext gpContext) {
+		return ResolveField(metadata.Fields[field], gpContext);
+	}
+
+	IMethodDefOrRef AddMethod(PortableToken method, GenericParamContext gpContext) {
+		return ResolveMethod(metadata.Methods[method], gpContext);
+	}
+
+	/// <summary>
+	/// Add the types to <see cref="Module"/>.
+	/// </summary>
+	/// <param name="types"></param>
+	/// <param name="level"></param>
+	/// <returns></returns>
+	public List<TypeDef> AddTypes(IEnumerable<PortableType> types, PortableMetadataLevel level) {
+		if (types is null)
+			throw new ArgumentNullException(nameof(types));
+
+		if (Enumerable2.NewList(types, out List<TypeDef> list))
+			return list;
+		foreach (var m in types) {
+			var type = AddType(m, level);
+			list.Add(type);
+		}
+		return list;
+	}
+
+	/// <summary>
+	/// Add the fields to <see cref="Module"/>.
+	/// </summary>
+	/// <param name="fields"></param>
+	/// <param name="level"></param>
+	/// <returns></returns>
+	public List<FieldDef> AddFields(IEnumerable<PortableField> fields, PortableMetadataLevel level) {
+		if (fields is null)
+			throw new ArgumentNullException(nameof(fields));
+
+		if (Enumerable2.NewList(fields, out List<FieldDef> list))
+			return list;
+		foreach (var m in fields) {
+			var field = AddField(m, level);
+			list.Add(field);
+		}
+		return list;
+	}
+
+	/// <summary>
+	/// Add the methods to <see cref="Module"/>.
+	/// </summary>
+	/// <param name="methods"></param>
+	/// <param name="level"></param>
+	/// <returns></returns>
+	public List<MethodDef> AddMethods(IEnumerable<PortableMethod> methods, PortableMetadataLevel level) {
+		if (methods is null)
+			throw new ArgumentNullException(nameof(methods));
+
+		if (Enumerable2.NewList(methods, out List<MethodDef> list))
+			return list;
+		foreach (var m in methods) {
+			var method = AddMethod(m, level);
+			list.Add(method);
+		}
+		return list;
+	}
+	#endregion
+
 	#region Resolver
 	readonly Dictionary<PortableType, PortableType> originalTypes = CreateOriginalTypes(metadata.Types.Values);
 
@@ -239,15 +315,6 @@ public sealed class PortableMetadataWriter(ModuleDef module, PortableMetadata me
 
 		assemblies.Add(name, assembly);
 		return assembly;
-	}
-
-	ITypeDefOrRef ResolveType(PortableComplexType type, GenericParamContext gpContext, bool allowTypeSpec = true) {
-		if (type.Kind == PortableComplexTypeKind.Token)
-			return ResolveType(metadata.Types[type.Token]);
-		else if (allowTypeSpec)
-			return new TypeSpecUser(AddTypeSig(type, gpContext));
-		else
-			throw new InvalidOperationException();
 	}
 
 	ITypeDefOrRef ResolveType(PortableType type) {
@@ -323,16 +390,12 @@ public sealed class PortableMetadataWriter(ModuleDef module, PortableMetadata me
 		return result;
 	}
 
-	IField ResolveField(PortableToken field, GenericParamContext gpContext) {
-		return ResolveField(metadata.Fields[field], gpContext);
-	}
-
 	IField ResolveField(PortableField field, GenericParamContext gpContext) {
 		if (fields.TryGetValue(field, out var fieldWithLevel))
 			return fieldWithLevel.Value;
 
 		// 1. Resolve the declaring type
-		var declaringType = ResolveType(field.Type, gpContext);
+		var declaringType = AddType(field.Type, gpContext);
 
 		// 2. Resolve the field
 		if (declaringType is TypeDef declaringType2) {
@@ -354,16 +417,12 @@ public sealed class PortableMetadataWriter(ModuleDef module, PortableMetadata me
 		}
 	}
 
-	IMethodDefOrRef ResolveMethod(PortableToken method, GenericParamContext gpContext) {
-		return ResolveMethod(metadata.Methods[method], gpContext);
-	}
-
 	IMethodDefOrRef ResolveMethod(PortableMethod method, GenericParamContext gpContext) {
 		if (methods.TryGetValue(method, out var methodWithLevel))
 			return methodWithLevel.Value;
 
 		// 1. Resolve the declaring type
-		var declaringType = ResolveType(method.Type, gpContext);
+		var declaringType = AddType(method.Type, gpContext);
 
 		// 2. Resolve the method
 		var methodSig = (MethodSig)AddCallingConventionSig(method.Signature, gpContext);
@@ -396,7 +455,7 @@ public sealed class PortableMetadataWriter(ModuleDef module, PortableMetadata me
 		if (source is null)
 			return;
 		foreach (var ca in source) {
-			var ctor = ResolveMethod(ca.Constructor, gpContext);
+			var ctor = AddMethod(ca.Constructor, gpContext);
 			var ca2 = CustomAttributeReader.Read(module, ca.RawData, ctor, gpContext);
 			destination.Add(ca2);
 		}
@@ -409,7 +468,7 @@ public sealed class PortableMetadataWriter(ModuleDef module, PortableMetadata me
 			var gp2 = new GenericParamUser((ushort)gp.Number, (GenericParamAttributes)gp.Attributes, gp.Name);
 			if (gp.Constraints is not null) {
 				foreach (var gpc in gp.Constraints)
-					gp2.GenericParamConstraints.Add(new GenericParamConstraintUser(ResolveType(gpc, gpContext)));
+					gp2.GenericParamConstraints.Add(new GenericParamConstraintUser(AddType(gpc, gpContext)));
 			}
 			destination.Add(gp2);
 		}
@@ -425,7 +484,7 @@ public sealed class PortableMetadataWriter(ModuleDef module, PortableMetadata me
 		if (source is null)
 			return;
 		foreach (var i in source)
-			destination.Add(new InterfaceImplUser(ResolveType(i, gpContext)));
+			destination.Add(new InterfaceImplUser(AddType(i, gpContext)));
 	}
 
 	static ClassLayoutUser? AddClassLayout(PortableClassLayout? classLayout) {
@@ -447,7 +506,7 @@ public sealed class PortableMetadataWriter(ModuleDef module, PortableMetadata me
 		if (source is null)
 			return;
 		foreach (var o in source)
-			destination.Add(new MethodOverride(methodBody, ResolveMethod(o, gpContext)));
+			destination.Add(new MethodOverride(methodBody, AddMethod(o, gpContext)));
 	}
 
 	ImplMapUser? AddImplMap(PortableImplMap? implMap) {
@@ -463,8 +522,8 @@ public sealed class PortableMetadataWriter(ModuleDef module, PortableMetadata me
 			return;
 		foreach (var p in source) {
 			var p2 = new PropertyDefUser(p.Name, (PropertySig)AddCallingConventionSig(p.Signature, gpContext), (PropertyAttributes)p.Attributes) {
-				GetMethod = p.GetMethod is PortableToken get ? (MethodDef)ResolveMethod(get, gpContext) : null,
-				SetMethod = p.SetMethod is PortableToken set ? (MethodDef)ResolveMethod(set, gpContext) : null
+				GetMethod = p.GetMethod is PortableToken get ? (MethodDef)AddMethod(get, gpContext) : null,
+				SetMethod = p.SetMethod is PortableToken set ? (MethodDef)AddMethod(set, gpContext) : null
 			};
 			AddCustomAttributes(p.CustomAttributes, p2.CustomAttributes, gpContext);
 			destination.Add(p2);
@@ -475,10 +534,10 @@ public sealed class PortableMetadataWriter(ModuleDef module, PortableMetadata me
 		if (source is null)
 			return;
 		foreach (var e in source) {
-			var e2 = new EventDefUser(e.Name, ResolveType(e.Type, gpContext), (EventAttributes)e.Attributes) {
-				AddMethod = e.AddMethod is PortableToken add ? (MethodDef)ResolveMethod(add, gpContext) : null,
-				RemoveMethod = e.RemoveMethod is PortableToken remove ? (MethodDef)ResolveMethod(remove, gpContext) : null,
-				InvokeMethod = e.InvokeMethod is PortableToken invoke ? (MethodDef)ResolveMethod(invoke, gpContext) : null
+			var e2 = new EventDefUser(e.Name, AddType(e.Type, gpContext), (EventAttributes)e.Attributes) {
+				AddMethod = e.AddMethod is PortableToken add ? (MethodDef)AddMethod(add, gpContext) : null,
+				RemoveMethod = e.RemoveMethod is PortableToken remove ? (MethodDef)AddMethod(remove, gpContext) : null,
+				InvokeMethod = e.InvokeMethod is PortableToken invoke ? (MethodDef)AddMethod(invoke, gpContext) : null
 			};
 			AddCustomAttributes(e.CustomAttributes, e2.CustomAttributes, gpContext);
 			destination.Add(e2);
@@ -568,7 +627,7 @@ public sealed class PortableMetadataWriter(ModuleDef module, PortableMetadata me
 			FilterStart = eh.FilterStart != -1 ? instructions[eh.FilterStart] : null,
 			HandlerStart = instructions[eh.HandlerStart],
 			HandlerEnd = eh.HandlerEnd != -1 ? instructions[eh.HandlerEnd] : null,
-			CatchType = eh.CatchType is PortableComplexType catchType ? ResolveType(catchType, gpContext) : null,
+			CatchType = eh.CatchType is PortableComplexType catchType ? AddType(catchType, gpContext) : null,
 			HandlerType = (ExceptionHandlerType)eh.HandlerType
 		});
 
@@ -585,17 +644,17 @@ public sealed class PortableMetadataWriter(ModuleDef module, PortableMetadata me
 		switch (kind) {
 		case PortableComplexTypeKind.InlineType:
 			Debug.Assert(type.Kind == PortableComplexTypeKind.Token || type.Kind == PortableComplexTypeKind.TypeSig);
-			return ResolveType(type, gpContext);
+			return AddType(type, gpContext);
 		case PortableComplexTypeKind.InlineField:
 			Debug.Assert(type.Kind == PortableComplexTypeKind.Token);
-			return ResolveField(type.Token, gpContext);
+			return AddField(type.Token, gpContext);
 		case PortableComplexTypeKind.InlineMethod:
 			Debug.Assert(type.Kind == PortableComplexTypeKind.Token || type.Kind == PortableComplexTypeKind.MethodSpec);
 			if (type.Kind == PortableComplexTypeKind.Token)
-				return ResolveMethod(type.Token, gpContext);
+				return AddMethod(type.Token, gpContext);
 			var method = type.Arguments![0].Token;
 			var instantiation = type.Arguments[1];
-			return new MethodSpecUser(ResolveMethod(method, gpContext), (GenericInstMethodSig)AddCallingConventionSig(instantiation, gpContext));
+			return new MethodSpecUser(AddMethod(method, gpContext), (GenericInstMethodSig)AddCallingConventionSig(instantiation, gpContext));
 		default:
 			throw new NotSupportedException();
 		}
@@ -644,9 +703,9 @@ public sealed class PortableMetadataWriter(ModuleDef module, PortableMetadata me
 			return new PinnedSig(AddTypeSig(arguments[0], gpContext));
 
 		case ElementType.ValueType: // et(next)
-			return new ValueTypeSig(ResolveType(arguments[0], gpContext, false));
+			return new ValueTypeSig(AddType(arguments[0], gpContext, false));
 		case ElementType.Class:
-			return new ClassSig(ResolveType(arguments[0], gpContext, false));
+			return new ClassSig(AddType(arguments[0], gpContext, false));
 
 		case ElementType.Var: // et(index)
 			return new GenericVar(arguments[0].GetInt32(), gpContext.Type);
@@ -682,9 +741,9 @@ public sealed class PortableMetadataWriter(ModuleDef module, PortableMetadata me
 			return new ValueArraySig(AddTypeSig(arguments[0], gpContext), (uint)arguments[1].GetInt32());
 
 		case ElementType.CModReqd: // et(modifier, next)
-			return new CModReqdSig(ResolveType(arguments[0], gpContext), AddTypeSig(arguments[1], gpContext));
+			return new CModReqdSig(AddType(arguments[0], gpContext), AddTypeSig(arguments[1], gpContext));
 		case ElementType.CModOpt:
-			return new CModOptSig(ResolveType(arguments[0], gpContext), AddTypeSig(arguments[1], gpContext));
+			return new CModOptSig(AddType(arguments[0], gpContext), AddTypeSig(arguments[1], gpContext));
 
 		case ElementType.Module: // et(index, next)
 			return new ModuleSig((uint)arguments[0].GetInt32(), AddTypeSig(arguments[1], gpContext));
