@@ -31,6 +31,8 @@ public sealed class PortableMetadataReader : ICustomAttributeWriterHelper {
 
 	bool IncludeCustomAttributes => (metadata.Options & PortableMetadataOptions.IncludeCustomAttributes) != 0;
 
+	bool KeepOldMaxStack => (metadata.Options & PortableMetadataOptions.KeepOldMaxStack) != 0;
+
 	/// <summary>
 	/// Constructor
 	/// </summary>
@@ -529,7 +531,8 @@ public sealed class PortableMetadataReader : ICustomAttributeWriterHelper {
 		foreach (var v in body.Variables)
 			variables.Add(AddTypeSig(v.Type));
 
-		return new PortableMethodBody(instructions, exceptionHandlers, variables);
+		int maxStack = KeepOldMaxStack ? body.MaxStack : (int)MaxStackCalculator.GetMaxStack(body.Instructions, body.ExceptionHandlers);
+		return new PortableMethodBody(instructions, exceptionHandlers, variables, maxStack, body.InitLocals);
 	}
 
 	PortableComplexType AddToken(object o) {

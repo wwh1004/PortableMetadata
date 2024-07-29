@@ -210,7 +210,9 @@ public struct PortableExceptionHandler(int tryStart, int tryEnd, int filterStart
 /// <param name="instructions">The list of instructions in the method body.</param>
 /// <param name="exceptionHandlers">The list of exception handlers in the method body.</param>
 /// <param name="variables">The list of variables in the method body.</param>
-public struct PortableMethodBody(IList<PortableInstruction> instructions, IList<PortableExceptionHandler> exceptionHandlers, IList<PortableComplexType> variables) {
+/// <param name="maxStack">The max stack value of the method body.</param>
+/// <param name="initLocals">The init locals flag.</param>
+public struct PortableMethodBody(IList<PortableInstruction> instructions, IList<PortableExceptionHandler> exceptionHandlers, IList<PortableComplexType> variables, int maxStack, bool initLocals) {
 	/// <summary>
 	/// Gets or sets the list of instructions in the method body.
 	/// </summary>
@@ -225,6 +227,16 @@ public struct PortableMethodBody(IList<PortableInstruction> instructions, IList<
 	/// Gets or sets the list of variables in the method body.
 	/// </summary>
 	public IList<PortableComplexType> Variables { get; set; } = variables;
+
+	/// <summary>
+	/// Gets or sets the max stack value of the method body.
+	/// </summary>
+	public int MaxStack { get; set; } = maxStack;
+
+	/// <summary>
+	/// Gets or sets the init locals flag.
+	/// </summary>
+	public bool InitLocals { get; set; } = initLocals;
 }
 
 /// <summary>

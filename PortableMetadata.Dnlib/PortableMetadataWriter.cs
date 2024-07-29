@@ -631,7 +631,7 @@ public sealed class PortableMetadataWriter(ModuleDef module, PortableMetadata me
 			HandlerType = (ExceptionHandlerType)eh.HandlerType
 		});
 
-		return new CilBody(true, instructions, exceptionHandlers, variables);
+		return new CilBody(body.InitLocals, instructions, exceptionHandlers, variables) { MaxStack = (ushort)body.MaxStack };
 	}
 
 	object AddToken(PortableComplexType type, GenericParamContext gpContext) {

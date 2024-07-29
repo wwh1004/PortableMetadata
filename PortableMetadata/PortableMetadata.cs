@@ -35,7 +35,12 @@ public enum PortableMetadataOptions {
 	/// <summary>
 	/// Include custom attributes.
 	/// </summary>
-	IncludeCustomAttributes = 8
+	IncludeCustomAttributes = 8,
+
+	/// <summary>
+	/// The original method body's max stack field should be used and a new one should not be calculated.
+	/// </summary>
+	KeepOldMaxStack = 16
 }
 
 /// <summary>
